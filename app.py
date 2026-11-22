@@ -1,11 +1,17 @@
-from flask import Flask, render_template, request
-from PIL import Image
+import os
+import re
 import cv2
 import numpy as np
-import re
+from PIL import Image
+from flask import Flask, render_template, request
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static")
+)
 
 @app.route("/")
 def home():
@@ -14,7 +20,6 @@ def home():
 
 @app.route("/scan", methods=["POST"])
 def scan():
-
     file = request.files.get("qr_image")
 
     if not file or file.filename == "":
@@ -24,15 +29,11 @@ def scan():
         )
 
     try:
-        # Read uploaded QR image
         image = Image.open(file).convert("RGB")
         image_array = np.array(image)
 
-        # Detect and decode QR code
         detector = cv2.QRCodeDetector()
-        url, points, straight_qr = detector.detectAndDecode(
-            image_array
-        )
+        url, points, straight_qr = detector.detectAndDecode(image_array)
 
         if not url:
             return render_template(
@@ -40,16 +41,9 @@ def scan():
                 result="No QR code found in this image."
             )
 
-        # Suspicious URL keywords
         suspicious_words = [
-            "login",
-            "verify",
-            "password",
-            "bank",
-            "gift",
-            "urgent",
-            "free-prize",
-            "claim"
+            "login", "verify", "password", "bank",
+            "gift", "urgent", "free-prize", "claim"
         ]
 
         found = [
@@ -57,20 +51,11 @@ def scan():
             if word in url.lower()
         ]
 
-        # Analyze extracted link
         if not re.match(r"^https?://", url, re.I):
-
             result = "WARNING: Suspicious or unsupported link format."
-
         elif found:
-
-            result = (
-                "WARNING: Suspicious keywords detected: "
-                + ", ".join(found)
-            )
-
+            result = "WARNING: Suspicious keywords detected: " + ", ".join(found)
         else:
-
             result = (
                 "No suspicious keyword patterns detected. "
                 "This does not guarantee that the link is safe."
@@ -83,9 +68,7 @@ def scan():
         )
 
     except Exception as error:
-
-        print("Error:", error)
-
+        app.logger.exception("QR scanning error")
         return render_template(
             "index.html",
             result="Unable to read this QR image."
