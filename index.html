@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Shield - QR Detector</title>
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🛡️ QR SHIELD</h1>
+    <h2>Fake QR Code Detector</h2>
+
+    <p>
+        Scan your QR code and check
+        whether its link looks suspicious.
+    </p>
+
+    <form method="POST"
+          action="/scan"
+          enctype="multipart/form-data">
+
+        <input type="file"
+               name="qr_image"
+               accept="image/*"
+               required>
+
+        <button type="submit">
+            Analyze QR Code
+        </button>
+
+    </form>
+
+    {% if result %}
+        <div class="result">
+            <h3>Analysis Result</h3>
+            <p>{{ result }}</p>
+            {% if url %}
+                <p>Detected URL: {{ url }}</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>
